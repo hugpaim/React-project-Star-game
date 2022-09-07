@@ -29,8 +29,8 @@ const PlayAgain = (props) => (
     <button onClick={props.onClick}>Play Again</button>
   </div>
 );
-
-const Game = (props) => {
+// Custom Hook
+const useGameState = () => {
   const [stars, setStars] = useState(utils.random(1, 9));
   const [availableNums, setAvaileNums] = useState(utils.range(1, 9));
   const [candidates, setCandidates] = useState([]);
@@ -45,10 +45,29 @@ const Game = (props) => {
     }
   });
 
+  const setGameState = (newCanditatesNum) => {
+    if (utils.sum(newCanditatesNum) !== stars) {
+      setCandidates(newCanditatesNum);
+    } else {
+      const newAvailableNum = availableNums.filter(
+        (n) => !newCanditatesNum.includes(n)
+      );
+      setStars(utils.randomSumIn(newAvailableNum, 9));
+      setAvaileNums(newAvailableNum);
+      setCandidates([]);
+    }
+  };
+
+  return { stars, availableNums, candidates, secondsLeft, setGameState };
+};
+
+const Game = (props) => {
+  const { stars, availableNums, candidates, secondsLeft, setGameState } =
+    useGameState();
+
   const candidatesAreWrong = utils.sum(candidates) > stars;
   const gameStatus =
     availableNums.length === 0 ? "won" : secondsLeft === 0 ? "lost" : "active";
-
 
   const numberStatus = (number) => {
     if (!availableNums.includes(number)) {
@@ -61,23 +80,15 @@ const Game = (props) => {
   };
 
   const onNumberClick = (number, currentStatus) => {
-    if (gameStatus!== "active"|| currentStatus === "used") {
+    if (gameStatus !== "active" || currentStatus === "used") {
       return;
     }
     const newCanditatesNum =
       currentStatus === "available"
         ? candidates.concat(number)
         : candidates.filter((cn) => cn !== number);
-    if (utils.sum(newCanditatesNum) !== stars) {
-      setCandidates(newCanditatesNum);
-    } else {
-      const newAvailableNum = availableNums.filter(
-        (n) => !newCanditatesNum.includes(n)
-      );
-      setStars(utils.randomSumIn(newAvailableNum, 9));
-      setAvaileNums(newAvailableNum);
-      setCandidates([]);
-    }
+
+    setGameState(newCanditatesNum);
   };
 
   return (
@@ -109,10 +120,10 @@ const Game = (props) => {
   );
 };
 
-const StarMatch = () =>{
-    const [gameId, setGameId] = useState(1);
-    return <Game key={gameId} startNewGame={() => setGameId(gameId + 1)}/>;
-}
+const StarMatch = () => {
+  const [gameId, setGameId] = useState(1);
+  return <Game key={gameId} startNewGame={() => setGameId(gameId + 1)} />;
+};
 
 // Color Theme
 const colors = {
